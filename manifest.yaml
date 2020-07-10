@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: dummy
+    app.kubernetes.io/version: COMMIT_HASH
+    app.kubernetes.io/component: api
+    app.kubernetes.io/instance: api-multitenant
+  name: dummy
+spec:
+  progressDeadlineSeconds: 600
+  revisionHistoryLimit: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: api
+      app.kubernetes.io/name: dummy
+  strategy:
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: api
+        app.kubernetes.io/name: dummy
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - dummy
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - api
+              topologyKey: kubernetes.io/hostname
+            weight: 10
+      containers:
+      - name: dummy
+        image: luizberti/dummy:latest
+        imagePullPolicy: Always
+        ports:
+        - name: service
+          containerPort: 5000
+        livenessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+          httpGet:
+            scheme: HTTP
+            port: service
+            path: /alive
+        readinessProbe:
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+          httpGet:
+            scheme: HTTP
+            port: service
+            path: /ready
+        resources:
+          limits:
+            cpu: 0.1
+            memory: 50Mi
+          requests:
+            cpu: 0.1
+            memory: 50Mi
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 300
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: external-api
+    app.kubernetes.io/name: dummy
+  name: dummy-api
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app.kubernetes.io/component: external-api
+    app.kubernetes.io/name: dummy
+  sessionAffinity: None
+  type: ClusterIP
+
