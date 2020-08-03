@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+const metrics = `
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{method="post",code="200"} 1027 1395066363000
+http_requests_total{method="post",code="400"}    3 1395066363000`
+
 var port = flag.Int("port", 5000, "API's HTTP serving port")
 
 type logwriter struct{}
@@ -36,6 +42,9 @@ func main() {
 	// HEALTHCHECKS
 	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusOK)
+	})
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, metrics, http.StatusOK)
 	})
 	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		report := ""

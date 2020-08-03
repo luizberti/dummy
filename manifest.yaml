@@ -26,6 +26,8 @@ spec:
       labels:
         app.kubernetes.io/component: api
         app.kubernetes.io/name: dummy
+      annotations:
+        prometheus.io/scrape: "true"
     spec:
       affinity:
         podAntiAffinity:
